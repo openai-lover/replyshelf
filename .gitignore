@@ -3,3 +3,5 @@ node_modules/
 *.log
 *.tar.gz
 *.zip
+dist/vendor/
+dist/models/
