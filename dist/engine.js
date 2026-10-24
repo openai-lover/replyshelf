@@ -5,19 +5,25 @@ async function ready() {
   if(extractor) return;
   if(!loading) loading=(async()=>{
     postMessage({type:'status',message:'Downloading the open model… first use needs internet.'});
-    const {pipeline,env}=await import(`https://cdn.jsdelivr.net/npm/@huggingface/transformers@${VERSION}`);
-    env.allowLocalModels=false;
+    const {pipeline,env}=await import('./vendor/transformers.min.js');
+    env.allowLocalModels=true;
+    env.allowRemoteModels=false;
+    env.useBrowserCache=false;
+    env.localModelPath=new URL('./models/',self.location.href).href;
+    env.backends.onnx.wasm.wasmPaths=new URL('./vendor/',self.location.href).href;
     env.backends.onnx.wasm.numThreads=1;
-    extractor=await pipeline('feature-extraction',MODEL,{dtype:'q8',device:'wasm',progress_callback:p=>{
+    extractor=await pipeline('feature-extraction',MODEL,{local_files_only:true,dtype:'q8',device:'wasm',progress_callback:p=>{
       if(p.status==='progress'&&p.file?.includes('onnx')) postMessage({type:'status',message:`Downloading AI model · ${Math.round(p.progress||0)}%`});
     }});
   })().catch(e=>{loading=null;throw e;});
   await loading;
 }
-async function embed(text) {
-  if(!vectors.has(text)) {
+async function embed(text,cache=true) {
+  if(!cache||!vectors.has(text)) {
     const output=await extractor(text,{pooling:'mean',normalize:true});
-    vectors.set(text,output.tolist()[0]);
+    const vector=output.tolist()[0];
+    if(!cache)return vector;
+    vectors.set(text,vector);
     if(vectors.size>300) vectors.delete(vectors.keys().next().value);
   }
   return vectors.get(text);
@@ -25,7 +31,7 @@ async function embed(text) {
 async function search(query,entries) {
   const items=[];
   for(const e of entries) items.push(await embed(e.question));
-  return rank(await embed(query),items,entries);
+  return rank(await embed(query,false),items,entries);
 }
 async function handle({data}) {
   try {
