@@ -9,8 +9,8 @@ async function ready() {
     env.allowLocalModels=true;
     env.allowRemoteModels=false;
     env.useBrowserCache=false;
-    env.localModelPath=new URL('./models/',self.location.href).href;
-    env.backends.onnx.wasm.wasmPaths=new URL('./vendor/',self.location.href).href;
+    env.localModelPath=new URL('./models/',import.meta.url).href;
+    env.backends.onnx.wasm.wasmPaths=new URL('./vendor/',import.meta.url).href;
     env.backends.onnx.wasm.numThreads=1;
     extractor=await pipeline('feature-extraction',MODEL,{local_files_only:true,dtype:'q8',device:'wasm',progress_callback:p=>{
       if(p.status==='progress'&&p.file?.includes('onnx')) postMessage({type:'status',message:`Downloading AI model · ${Math.round(p.progress||0)}%`});
