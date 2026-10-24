@@ -7,3 +7,6 @@ test('rank maps each embedding to its own stable entry id',()=>{assert.deepEqual
 test('weak and ambiguous matches do not masquerade as certain',()=>{assert.equal(verdict([]),'weak');assert.equal(verdict([{score:.419}]),'weak');assert.equal(verdict([{score:.62},{score:.59}]),'ambiguous');assert.equal(verdict([{score:.62},{score:.4}]),'match');});
 test('dimension mismatch fails instead of producing NaN',()=>assert.throws(()=>dot([1],[1,0])));
 test('lexical baseline returns reproducible ties in shelf order',()=>{assert.equal(lexicalRank('zzzz',seed)[0].id,'refund');assert.equal(lexicalRank(seed[3].question,seed)[0].id,'password');});
+test('import trims ids before detecting collisions',()=>assert.throws(()=>validateEntries([seed[0],{...seed[0],id:' refund ' }])));
+test('hostile HTML stays inert text in the data model',()=>{const text='<img src=x onerror=alert(1)>';assert.equal(validateEntries([{...seed[0],answer:text}])[0].answer,text);});
+test('rejects non-string and oversized answer fields',()=>{assert.throws(()=>validateEntries([{...seed[0],answer:{html:'bad'}}]));assert.throws(()=>validateEntries([{...seed[0],answer:'a'.repeat(4001)}]));});
